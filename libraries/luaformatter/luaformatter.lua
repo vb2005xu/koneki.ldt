@@ -38,15 +38,13 @@ local Q    = require 'metalua.treequery'
 local walker = {
   -- Indentations line number
   indentation = {},
-  indenttable = true,
   -- Key:   Line number to indent back.
   -- Value: Previous line number, it has the indentation depth wanted.
   reference = {},
-  source = ""
 }
 
 --------------------------------------------------------------------------------
--- Format walking utilities
+-- Format utilities
 --------------------------------------------------------------------------------
 
 ---
@@ -77,62 +75,11 @@ local function getlastline(node)
   return node.lineinfo.last.line , node.lineinfo.last.offset
 end
 
----
--- Indents `Local and `Set
-local function assignments(node)
-
-  -- Indent only when node spreads across several lines
-  local nodestart = getfirstline(node, true)
-  local nodeend = getlastline(node)
-  if nodestart >= nodeend then
-    return
-  end
-
-  -- Format it
-  local lhs, exprs = unpack(node)
-  if #exprs == 0 then
-    -- Regular `Local handling
-    walker.indentexprlist(lhs, node)
-    -- Avoid problems and format functions later.
-  elseif not (#exprs == 1 and exprs[1].tag == 'Function') then
-
-    -- for local, indent lhs
-    if node.tag == 'Local' then
-
-      -- Else way, indent LHS and expressions like a single chunk.
-      local endline = getlastline(exprs)
-      local startline, startindex = getfirstline(lhs, true)
-      walker.indent(startline, startindex, endline, node)
-
-    end
-
-    -- In this chunk indent expressions one more.
-    walker.indentexprlist(exprs, node)
-  end
-end
-
----
--- Indents parameters
---
--- @param callable  Node containing the params
--- @param firstparam first parameter of the given callable
-local function indentparams(firstparam, lastparam, parent)
-
-  -- Determine parameters first line
-  local paramstartline,paramstartindex = getfirstline(firstparam)
-
-  -- Determine parameters last line
-  local paramlastline = getlastline(lastparam)
-
-  -- indent
-  walker.indent(paramstartline, paramstartindex, paramlastline, parent)
-end
-
-function walker.indent(startline, startindex, endline, parent)
+local function indent(cfg, startline, startindex, endline, parent)
 
   -- Indent following lines when current one does not start with first statement
   -- of current block.
-  if not walker.source:sub(1,startindex-1):find("[\r\n]%s*$") then
+  if not cfg.source:sub(1,startindex-1):find("[\r\n]%s*$") then
     startline = startline + 1
   end
 
@@ -152,8 +99,67 @@ function walker.indent(startline, startindex, endline, parent)
 end
 
 ---
+-- Indent all lines of an expression list.
+local function indentexprlist(cfg, node, parent, ignorecomments)
+  local endline = getlastline(node)
+  local startline, startindex = getfirstline(node, ignorecomments)
+  indent(cfg, startline, startindex, endline, parent)
+end
+
+---
+-- Indents `Local and `Set
+local function assignments(cfg, node)
+
+  -- Indent only when node spreads across several lines
+  local nodestart = getfirstline(node, true)
+  local nodeend = getlastline(node)
+  if nodestart >= nodeend then
+    return
+  end
+
+  -- Format it
+  local lhs, exprs = unpack(node)
+  if #exprs == 0 then
+    -- Regular `Local handling
+    indentexprlist(cfg, lhs, node)
+    -- Avoid problems and format functions later.
+  elseif not (#exprs == 1 and exprs[1].tag == 'Function') then
+
+    -- for local, indent lhs
+    if node.tag == 'Local' then
+
+      -- Else way, indent LHS and expressions like a single chunk.
+      local endline = getlastline(exprs)
+      local startline, startindex = getfirstline(lhs, true)
+      indent(cfg, startline, startindex, endline, node)
+
+    end
+
+    -- In this chunk indent expressions one more.
+    indentexprlist(cfg, exprs, node)
+  end
+end
+
+---
+-- Indents parameters
+--
+-- @param callable  Node containing the params
+-- @param firstparam first parameter of the given callable
+local function indentparams(cfg, firstparam, lastparam, parent)
+
+  -- Determine parameters first line
+  local paramstartline,paramstartindex = getfirstline(firstparam)
+
+  -- Determine parameters last line
+  local paramlastline = getlastline(lastparam)
+
+  -- indent
+  indent(cfg, paramstartline, paramstartindex, paramlastline, parent)
+end
+
+---
 -- Indent all lines of a chunk.
-function walker.indentchunk(node, parent)
+local function indentchunk(cfg, node, parent)
 
   -- Get regular start
   local startline, startindex = getfirstline(node[1])
@@ -167,15 +173,7 @@ function walker.indentchunk(node, parent)
     endline = lastnode.lineinfo.last.line
   end
 
-  walker.indent(startline, startindex, endline, parent)
-end
-
----
--- Indent all lines of an expression list.
-function walker.indentexprlist(node, parent, ignorecomments)
-  local endline = getlastline(node)
-  local startline, startindex = getfirstline(node, ignorecomments)
-  walker.indent(startline, startindex, endline, parent)
+  indent(cfg, startline, startindex, endline, parent)
 end
 
 --------------------------------------------------------------------------------
@@ -183,7 +181,7 @@ end
 --------------------------------------------------------------------------------
 local case = { }
 
-function case.String(node)
+function case.String(cfg, node)
   local firstline, _ = getfirstline(node,true)
   local lastline = getlastline(node)
   for line=firstline+1, lastline do
@@ -191,9 +189,9 @@ function case.String(node)
   end
 end
 
-function case.Table(node, parent)
+function case.Table(cfg, node)
 
-  if not walker.indenttable then
+  if not cfg.indenttable then
     return
   end
 
@@ -211,53 +209,54 @@ function case.Table(node, parent)
     local childlastline = getlastline(lastnode)
 
     -- Actual formating
-    walker.indent(childfirstline, childfirstindex, childlastline, node)
+    indent(cfg, childfirstline, childfirstindex, childlastline, node)
   end
 end
 
 --------------------------------------------------------------------------------
 -- Statements formatters
 --------------------------------------------------------------------------------
-function case.Call(node, parent)
+function case.Call(cfg, node)
   local expr, firstparam = unpack(node)
   if firstparam then
-    indentparams(firstparam, node[#node], node)
+    indentparams(cfg, firstparam, node[#node], node)
   end
 end
 
-function case.Do(node, parent)
+function case.Do(cfg, node, parent)
   -- Ignore empty node
   if #node == 0 or not parent then
     return
   end
-  walker.indentchunk(node, parent)
+  indentchunk(cfg, node, parent)
 end
 
-function case.Forin(node)
+function case.Forin(cfg, node)
   local ids, iterator, _ = unpack(node)
-  walker.indentexprlist(ids, node)
-  walker.indentexprlist(iterator, node)
+  indentexprlist(cfg, ids, node)
+  indentexprlist(cfg, iterator, node)
 end
 
-function case.Fornum(node)
+function case.Fornum(cfg, node)
   -- Format from variable name to last expressions
   local var, init, limit, range = unpack(node)
   local startline, startindex   = getfirstline(var)
 
   -- Take range as last expression, when not available limit will do
   local lastexpr = range.tag and range or limit
-  walker.indent(startline, startindex, getlastline(lastexpr), node)
+  indent(cfg, startline, startindex, getlastline(lastexpr), node)
 end
 
-function case.Function(node)
+function case.Function(cfg, node)
   local params, chunk = unpack(node)
-  walker.indentexprlist(params, node)
+  indentexprlist(cfg, params, node)
 end
 
-function case.Index(node,parent)
+function case.Index(cfg, node, parent)
 
   -- Bug 422778 - [ast] Missing a lineinfo attribute on one Index 
-  -- the following if is a workaround avoid a nil exception but the formatting of the current node is avoided.
+  -- the following if is a workaround avoid a nil exception but the formatting
+  -- of the current node is avoided.
   if not node.lineinfo then
     return
   end
@@ -270,63 +269,67 @@ function case.Index(node,parent)
 
   local left, right = unpack(node)
   -- Bug 422778 [ast] Missing a lineinfo attribute on one Index
-  -- the following line is a workaround avoid a nil exception but the formatting of the current node is avoided.
+  -- the following line is a workaround avoid a nil exception but the
+  -- formatting of the current node is avoided.
   if left.lineinfo then
     local leftendline, leftendoffset = getlastline(left)
-    -- For Call,Set and Local nodes we want to indent to end of the parent node not only the index itself
+    -- For Call,Set and Local nodes we want to indent to end of the parent node
+    -- not only the index itself
+    local parentisassignment = parent.tag == 'Set' or parent.tag == 'Local'
+    local parenthaschild = parent[1] and #parent[1] ==  1
     if (parent[1] == node and parent.tag == 'Call') or
-      (parent[1] and #parent[1] ==  1 and parent[1][1] == node and (parent.tag == 'Set' or parent.tag == 'Local')) then
-      
+      (parentisassignment and parenthaschild and parent[1][1] == node)
+    then
       local parentendline = getlastline(parent)
-      walker.indent(leftendline, leftendoffset+1, parentendline, parent)
+      indent(cfg, leftendline, leftendoffset+1, parentendline, parent)
     else
       local rightendline = getlastline(right)
-      walker.indent(leftendline, leftendoffset+1, rightendline, node)
+      indent(cfg, leftendline, leftendoffset+1, rightendline, node)
     end
   end
 
 end
 
-function case.If(node)
+function case.If(cfg, node)
   -- Indent only conditions, chunks are already taken care of.
   local nodesize = #node
   for conditionposition=1, nodesize-(nodesize%2), 2 do
-    walker.indentexprlist(node[conditionposition], node)
+    indentexprlist(cfg, node[conditionposition], node)
   end
 end
 
-function case.Invoke(node, parent)
+function case.Invoke(cfg, node)
   local expr, str, firstparam = unpack(node)
 
   --indent str
   local exprendline, exprendoffset = getlastline(expr)
   local nodeendline = getlastline(node)
-  walker.indent(exprendline, exprendoffset+1, nodeendline, node)
+  indent(cfg, exprendline, exprendoffset+1, nodeendline, node)
 
   --indent parameters
   if firstparam then
-    indentparams(firstparam, node[#node], str)
+    indentparams(cfg, firstparam, node[#node], str)
   end
 
 end
 
-function case.Repeat(node)
+function case.Repeat(cfg, node)
   local _, expr = unpack(node)
-  walker.indentexprlist(expr, node)
+  indentexprlist(cfg, expr, node)
 end
 
-function case.Return(node, parent)
+function case.Return(cfg, node, parent)
   if #node > 0 then
-    walker.indentchunk(node, parent)
+    indentchunk(cfg, node, parent)
   end
 end
 
 case.Local = assignments
 case.Set   = assignments
 
-function case.While(node)
+function case.While(cfg, node)
   local expr, _ = unpack(node)
-  walker.indentexprlist(expr, node)
+  indentexprlist(cfg, expr, node)
 end
 
 --------------------------------------------------------------------------------
@@ -356,17 +359,19 @@ local function getindentlevel(source, indenttable)
   -- computation and mistakes. When leaving a node after formatting it, we
   -- simply uses indentation of before entering this node.
   -----------------------------------------------------------------------------
+  local configuration = {
+    indenttable = indenttable,
+    source = source
+  }
   local ast = mlc:src_to_ast(source)
-  walker.indenttable = indenttable
   walker.indentation = {}
   walker.reference = {}
-  walker.source = source
 
   local function onNode(...)
     local tag = (...).tag
-    if not tag then case.Do(...) else
+    if not tag then case.Do(configuration, ...) else
       local f = case[tag]
-      if f then f(...) end
+      if f then f(configuration, ...) end
     end
   end
 
