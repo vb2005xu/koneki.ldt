@@ -1,0 +1,4 @@
+Generating rockspec can be tricky. Here are my magic commands.
+* `make` or `make VERSION=X REVISION=Y` for releases
+* luarocks pack --local luadocumentor-X-Y.rockspec
+* luarocks  build --local  luadocumentor-X-Y.src.rock to check if it worked

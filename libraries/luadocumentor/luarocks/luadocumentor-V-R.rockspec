@@ -1,5 +1,5 @@
 package = 'LuaDocumentor'
-version = '0.1.4-1'
+version = 'V-R'
 description = {
   summary = 'LuaDocumentor allow users to generate HTML and API files from code documented using Lua documentation language.',
   detailed = [[
@@ -11,7 +11,7 @@ description = {
   license = 'EPL'
 }
 source = {
-  url = ''
+  url = 'URL'
 }
 dependencies = {
   'lua ~> 5.1',
@@ -27,8 +27,7 @@ build = {
       luadocumentor = 'luadocumentor.lua'
     },
     lua = {
-      ['models.internalmodelbuilder'] =
-        '../modelsbuilder/models/internalmodelbuilder.mlua'
+      ['models.internalmodelbuilder'] = 'models/internalmodelbuilder.mlua'
     }
   },
   modules = {
@@ -36,23 +35,22 @@ build = {
     docgenerator = 'docgenerator.lua',
     extractors = 'extractors.lua',
     lddextractors = 'lddextractor.lua',
-    templateengine = '../templateengine/templateengine.lua',
+    templateengine = 'templateengine.lua',
 
     ['fs.lfs'] = 'fs/lfs.lua',
 
-    ['models.apimodel'] = '../modelsbuilder/models/apimodel.lua',
-    ['models.apimodelbuilder'] = '../modelsbuilder/models/apimodelbuilder.lua',
-    ['models.internalmodel'] = '../modelsbuilder/models/internalmodel.lua',
-    ['models.ldparser'] = '../modelsbuilder/models/ldparser.lua',
+    ['models.apimodel'] = 'models/apimodel.lua',
+    ['models.apimodelbuilder'] = 'models/apimodelbuilder.lua',
+    ['models.internalmodel'] = 'models/internalmodel.lua',
+    ['models.ldparser'] = 'models/ldparser.lua',
 
-    ['template.file'] = '../doctemplates/template/file.lua',
+    ['template.file'] = 'template/file.lua',
     ['template.index'] = 'template/index.lua',
-    ['template.index.recordtypedef'] =
-      '../doctemplates/template/index/recordtypedef.lua',
-    ['template.item'] = '../doctemplates/template/item.lua',
+    ['template.index.recordtypedef'] = 'template/index/recordtypedef.lua',
+    ['template.item'] = 'template/item.lua',
     ['template.page'] = 'template/page.lua',
-    ['template.recordtypedef'] = '../doctemplates/template/recordtypedef.lua',
-    ['template.usage'] = '../doctemplates/template/usage.lua',
-    ['template.utils'] = '../doctemplates/template/utils.lua',
+    ['template.recordtypedef'] = 'template/recordtypedef.lua',
+    ['template.usage'] = 'template/usage.lua',
+    ['template.utils'] = 'template/utils.lua',
   }
 }
