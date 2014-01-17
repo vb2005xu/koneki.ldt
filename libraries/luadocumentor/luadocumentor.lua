@@ -1,6 +1,6 @@
 #!/usr/bin/lua
 --------------------------------------------------------------------------------
---  Copyright (c) 2012 Sierra Wireless.
+--  Copyright (c) 2012-2014 Sierra Wireless.
 --  All rights reserved. This program and the accompanying materials
 --  are made available under the terms of the Eclipse Public License v1.0
 --  which accompanies this distribution, and is available at
@@ -156,7 +156,7 @@ end
 -- This loop is just for counting parsed files
 -- TODO: Find a more elegant way to do it
 local parsedfilescount = 0
-for _, p in pairs( parsedfiles) do
+for _, p in pairs(parsedfiles) do
 	parsedfilescount = parsedfilescount + 1
 end
 print (parsedfilescount .. ' file(s) parsed.')
