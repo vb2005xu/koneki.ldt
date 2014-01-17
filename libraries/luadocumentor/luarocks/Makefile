@@ -5,11 +5,14 @@ URL=http://0.0.0.0:8000/
 ROCKSPEC=luadocumentor-${VERSION}-${REVISION}.rockspec
 ROCK=luadocumentor-${VERSION}-${REVISION}.tar.gz
 
-.PHONY: all clean rockspec
+.PHONY:clean rockspec
 
 all: rock
 
-rockspec:
+rockspec: ${ROCKSPEC}
+rock: ${ROCK}
+
+${ROCKSPEC}:
 	@echo 'Creating ${ROCKSPEC}'
 	@cp luadocumentor-V-R.rockspec ${ROCKSPEC}
 	@sed -i 's|V-R|${VERSION}-${REVISION}|' ${ROCKSPEC}
@@ -27,7 +30,7 @@ copy:
 	  ../lddextractor.lua ../luadocumentor.lua ../fs/ ../template/ \
 	  .
 
-rock: copy rockspec
+${ROCK}: copy rockspec
 	@echo 'Inflating ${ROCK}'
 	@tar -zcf ${ROCK} ${ROCKSPEC} fs/ models/ template/ \
 	  templateengine.lua defaultcss.lua docgenerator.lua \
