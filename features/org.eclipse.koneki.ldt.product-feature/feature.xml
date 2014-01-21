@@ -2,7 +2,7 @@
 <feature
       id="org.eclipse.koneki.ldt.product"
       label="Lua Development Tools - branding"
-      version="1.0.1.qualifier"
+      version="1.0.2.qualifier"
       provider-name="Koneki"
       plugin="org.eclipse.koneki.ldt.branding">
 
