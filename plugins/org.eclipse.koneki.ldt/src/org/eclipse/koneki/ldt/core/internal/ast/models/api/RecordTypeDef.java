@@ -23,6 +23,7 @@ public class RecordTypeDef extends TypeDef {
 	private String documentation;
 	private HashMap<String, Item> fields = new HashMap<String, Item>();
 	private TypeRef supertype;
+	private TypeRef defaultIndex;
 
 	public RecordTypeDef() {
 
@@ -77,5 +78,14 @@ public class RecordTypeDef extends TypeDef {
 
 	public void setSupertype(TypeRef supertype) {
 		this.supertype = supertype;
+	}
+
+	public void setDefaultIndex(TypeRef defaultindex) {
+		this.defaultIndex = defaultindex;
+
+	}
+
+	public TypeRef getDefaultIndex() {
+		return defaultIndex;
 	}
 }

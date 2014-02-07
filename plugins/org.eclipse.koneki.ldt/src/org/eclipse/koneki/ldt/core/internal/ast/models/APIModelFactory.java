@@ -271,6 +271,7 @@ public final class APIModelFactory {
 				int sourceRangeMin = l.checkInteger(3);
 				int sourceRangeMax = l.checkInteger(4);
 				TypeRef supertype = l.checkJavaObject(5, TypeRef.class);
+				TypeRef defaultindex = l.checkJavaObject(6, TypeRef.class);
 
 				RecordTypeDef record = new RecordTypeDef();
 				record.setName(name);
@@ -279,6 +280,8 @@ public final class APIModelFactory {
 				record.setEnd(sourceRangeMax);
 				if (supertype != null)
 					record.setSupertype(supertype);
+				if (defaultindex != null)
+					record.setDefaultIndex(defaultindex);
 
 				l.pushJavaObject(record);
 

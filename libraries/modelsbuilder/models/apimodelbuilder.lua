@@ -274,16 +274,15 @@ function M.createmoduleapi(ast,modulename)
 					--create recordtypedef is not define
 					local moduletypedef = gettypedef(_file,_typeref.typename,"recordtypedef",sourcerangemin,sourcerangemax)
 
-					-- manage extends (inheritance)
-					if moduletypedef
-						and moduletypedef.tag == "recordtypedef"
-						and regulartags["extends"]
-						and regulartags["extends"][1]
-						and  regulartags["extends"][1].type then
-
-						local _supertype = regulartags["extends"][1].type
-						
-						if _supertype then moduletypedef.supertype = createtyperef(_supertype) end
+					-- manage extends (inheritance) and index tags 
+					if moduletypedef and moduletypedef.tag == "recordtypedef" then
+						if regulartags["extends"]	and regulartags["extends"][1] and  regulartags["extends"][1].type then
+  						local _supertype = regulartags["extends"][1].type
+	     				if _supertype then moduletypedef.supertype = createtyperef(_supertype) end
+	     			elseif regulartags["index"] and regulartags["index"][1] and  regulartags["index"][1].type then
+	     			  local _defaulttype = regulartags["index"][1].type
+              if _defaulttype then moduletypedef.defaultindex = createtyperef(_defaulttype) end
+					  end
 					end
 				end
 				-- manage "type" comment
@@ -319,6 +318,12 @@ function M.createmoduleapi(ast,modulename)
 					local _supertype = regulartags["extends"][1].type
 					if _supertype then _recordtypedef.supertype = createtyperef(_supertype) end
 				end
+				
+				-- manage index tag
+        if regulartags["index"] and regulartags["index"][1] and  regulartags["index"][1].type then
+          local _defaulttype = regulartags["index"][1].type
+          if _defaulttype then _recordtypedef.defaultindex = createtyperef(_defaulttype) end
+        end
 			elseif regulartags["field"] then
 				local dt_field = regulartags["field"][1]
 
