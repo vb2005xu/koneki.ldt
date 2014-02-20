@@ -227,7 +227,7 @@ public final class LuaASTUtils {
 		if (recordTypeResolution.getTypeDef() instanceof RecordTypeDef) {
 			// search the default index
 			RecordTypeDef recordTypeDef = (RecordTypeDef) recordTypeResolution.getTypeDef();
-			TypeRef defaultIndex = recordTypeDef.getDefaultIndex();
+			TypeRef defaultIndex = recordTypeDef.getDefaultvaluetyperef();
 			if (defaultIndex != null)
 				return resolveType(recordTypeResolution.getModule(), defaultIndex);
 

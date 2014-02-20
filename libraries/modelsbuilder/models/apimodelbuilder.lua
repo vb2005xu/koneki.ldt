@@ -281,7 +281,7 @@ function M.createmoduleapi(ast,modulename)
 	     				if _supertype then moduletypedef.supertype = createtyperef(_supertype) end
 	     			elseif regulartags["index"] and regulartags["index"][1] and  regulartags["index"][1].type then
 	     			  local _defaulttype = regulartags["index"][1].type
-              if _defaulttype then moduletypedef.defaultindex = createtyperef(_defaulttype) end
+              if _defaulttype then moduletypedef.defaultvaluetyperef = createtyperef(_defaulttype) end
 					  end
 					end
 				end
@@ -322,7 +322,7 @@ function M.createmoduleapi(ast,modulename)
 				-- manage index tag
         if regulartags["index"] and regulartags["index"][1] and  regulartags["index"][1].type then
           local _defaulttype = regulartags["index"][1].type
-          if _defaulttype then _recordtypedef.defaultindex = createtyperef(_defaulttype) end
+          if _defaulttype then _recordtypedef.defaultvaluetyperef = createtyperef(_defaulttype) end
         end
 			elseif regulartags["field"] then
 				local dt_field = regulartags["field"][1]

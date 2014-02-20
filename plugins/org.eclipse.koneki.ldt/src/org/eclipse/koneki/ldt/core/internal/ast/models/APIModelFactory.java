@@ -281,7 +281,7 @@ public final class APIModelFactory {
 				if (supertype != null)
 					record.setSupertype(supertype);
 				if (defaultindex != null)
-					record.setDefaultIndex(defaultindex);
+					record.setDefaultvaluetyperef(defaultindex);
 
 				l.pushJavaObject(record);
 
