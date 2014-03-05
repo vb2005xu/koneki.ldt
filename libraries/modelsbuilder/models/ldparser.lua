@@ -142,16 +142,30 @@ local modifiersparser = gg.sequence({
 })
 
 -- ----------------------------------------------------
--- parse a index tag
+-- parse a list tag
 -- ----------------------------------------------------
-local indexparsers = {
+local listparsers = {
   -- full parser
   gg.sequence({
     builder = function (result)
       raiserror(result)
       return {type = result[1]}
     end,
-    '@','index', typerefparser
+    '@','list','<',typerefparser,'>'
+  }),
+}
+
+-- ----------------------------------------------------
+-- parse a map tag
+-- ----------------------------------------------------
+local mapparsers = {
+  -- full parser
+  gg.sequence({
+    builder = function (result)
+      raiserror(result)
+      return {keytype = result[1],valuetype = result[2]}
+    end,
+    '@','map','<',typerefparser,',',typerefparser,'>'
   }),
 }
 
@@ -427,8 +441,9 @@ local function initparser()
 		["field"]    = fieldparsers,
 		["function"] = functionparsers,
 		["param"]    = paramparsers,
-		["extends"]    = extendsparsers,
-		["index"]    = indexparsers
+		["extends"]  = extendsparsers,
+		["list"]     = listparsers,
+		["map"]      = mapparsers
 	}
 
 	-- create lexer used for parsing
