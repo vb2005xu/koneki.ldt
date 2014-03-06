@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013 Sierra Wireless and others.
+ * Copyright (c) 2014 Sierra Wireless and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,19 +10,12 @@
  *******************************************************************************/
 package org.eclipse.koneki.ldt.support.lua51.internal.interpreter;
 
-import org.eclipse.dltk.launching.IInterpreterInstall;
-import org.eclipse.koneki.ldt.debug.core.internal.interpreter.jnlua.AbstractJNLuaInterpreterInstallType;
+import org.eclipse.dltk.launching.IInterpreterInstallType;
+import org.eclipse.koneki.ldt.debug.core.interpreter.AbstractLuaInterpreterInstall;
 
-public class JNLua51InterpreterInstallType extends AbstractJNLuaInterpreterInstallType {
+public class Lua51InterpreterInstall extends AbstractLuaInterpreterInstall {
 
-	@Override
-	public String getName() {
-		return "JNLua 5.1"; //$NON-NLS-1$
+	public Lua51InterpreterInstall(final IInterpreterInstallType type, final String id) {
+		super(type, id);
 	}
-
-	@Override
-	protected IInterpreterInstall doCreateInterpreterInstall(String id) {
-		return new JNLua51InterpreterInstall(this, id);
-	}
-
 }

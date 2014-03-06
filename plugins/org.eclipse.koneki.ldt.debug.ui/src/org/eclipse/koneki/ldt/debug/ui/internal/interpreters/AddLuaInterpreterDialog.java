@@ -46,6 +46,7 @@ import org.eclipse.koneki.ldt.debug.core.internal.model.interpreter.Info;
 import org.eclipse.koneki.ldt.debug.core.internal.model.interpreter.InterpreterFactory;
 import org.eclipse.koneki.ldt.debug.core.internal.model.interpreter.impl.InterpreterFactoryImpl;
 import org.eclipse.koneki.ldt.debug.core.internal.model.interpreter.impl.InterpreterPackageImpl;
+import org.eclipse.koneki.ldt.debug.core.interpreter.ILuaInterpreterInstallType;
 import org.eclipse.koneki.ldt.debug.ui.internal.Activator;
 import org.eclipse.koneki.ldt.ui.SWTUtil;
 import org.eclipse.swt.SWT;
@@ -64,7 +65,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-@SuppressWarnings("restriction")
 public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInterpreterDialog {
 
 	private IAddInterpreterDialogRequestor requestor;
@@ -81,7 +81,6 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 	private LuaInterpreterEnvironmentVariablesBlock environementVariableBlock;
 	private Button handlesExecutionOption;
 	private Group capabilitiesGroup;
-	private Label capabilitiesDesctiptionLabel;
 	private Button handlesFilesAsArguments;
 
 	public AddLuaInterpreterDialog(final IAddInterpreterDialogRequestor requestor, final Shell shell, final IEnvironment environment,
@@ -141,10 +140,6 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 		capabilitiesGroup.setText(Messages.AddLuaInterpreterDialog_CapabilitesGroupLabel);
 		GridLayoutFactory.swtDefaults().margins(0, 0).numColumns(1).applyTo(capabilitiesGroup);
 		GridDataFactory.swtDefaults().grab(true, false).span(3, 1).align(SWT.FILL, SWT.FILL).applyTo(capabilitiesGroup);
-
-		capabilitiesDesctiptionLabel = new Label(capabilitiesGroup, SWT.NONE);
-		toItalic(capabilitiesDesctiptionLabel);
-		GridDataFactory.swtDefaults().span(3, 1).grab(true, false).align(SWT.FILL, SWT.FILL).applyTo(capabilitiesDesctiptionLabel);
 
 		handlesExecutionOption = new Button(capabilitiesGroup, SWT.CHECK);
 		handlesExecutionOption.setText(Messages.AddLuaInterpreterDialog_ExecutionOption);
@@ -212,7 +207,6 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 				updateStatusLine();
 			}
 		});
-
 	}
 
 	private void init() {
@@ -261,33 +255,59 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 		environementVariableBlock.update();
 	}
 
-	/** Disables all {@link Control}s from {@link #capabilitiesGroup} */
-	private void setCapabilityGroupEnabled(final boolean enabled) {
-		final Control[] controls = { capabilitiesGroup, handlesExecutionOption, handlesFilesAsArguments };
-		for (final Control control : controls)
-			if (control != null)
-				control.setEnabled(enabled);
-		if (enabled)
-			capabilitiesDesctiptionLabel.setText(Messages.AddLuaInterpreterDialog_WhatAreCapabilitiesLabel);
-		else
-			capabilitiesDesctiptionLabel.setText(Messages.AddLuaInterpreterDialog_InterpreterNotConfigurable);
-	}
-
 	private void updateOnInterpreterTypeChange() {
+		// Get selected interpreter type
 		final IInterpreterInstallType selectedType = getSelectedInterpreterType();
-		final boolean isEmbedded = selectedType instanceof IEmbeddedInterpreterInstallType;
+
+		// TODO This declaration be move when we will remove IEmbeddedInterpreterInstallType for ldt 2.0.0.
+		boolean isEmbedded = false;
+
+		// Try to cast it has LuaInterpreter to know default value
+		ILuaInterpreterInstallType selectedLuaInterpreterType;
+		if (selectedType instanceof ILuaInterpreterInstallType) {
+			selectedLuaInterpreterType = (ILuaInterpreterInstallType) selectedType;
+
+			if (selectedLuaInterpreterType.getDefaultInterpreterName() != null)
+				nameText.setText(selectedLuaInterpreterType.getDefaultInterpreterName());
+			else
+				nameText.setText(""); //$NON-NLS-1$
+
+			if (selectedLuaInterpreterType.getDefaultInterpreterArguments() != null)
+				argsText.setText(selectedLuaInterpreterType.getDefaultInterpreterArguments());
+			else
+				argsText.setText(""); //$NON-NLS-1$
+			argsText.setEnabled(selectedLuaInterpreterType.handleInterpreterArguments());
+
+			handlesFilesAsArguments.setSelection(selectedLuaInterpreterType.handleExecuteOption());
+			handlesExecutionOption.setEnabled(false);
+
+			handlesFilesAsArguments.setSelection(selectedLuaInterpreterType.handleFilesAsArgument());
+			handlesFilesAsArguments.setEnabled(false);
+
+			isEmbedded = selectedLuaInterpreterType.isEmbeddedInterpreter();
+		} else {
+			nameText.setText(""); //$NON-NLS-1$
+			argsText.setText(""); //$NON-NLS-1$
+			argsText.setEnabled(true);
+			handlesExecutionOption.setEnabled(true);
+			handlesFilesAsArguments.setEnabled(true);
+			handlesExecutionOption.setSelection(true);
+			handlesFilesAsArguments.setSelection(true);
+
+			// Manage deprecated code (since 1.2)
+			// Check if it is embedded
+			isEmbedded = selectedType instanceof IEmbeddedInterpreterInstallType;
+		}
+
+		// Manage interpreter path :
+		// Embedded interpreter does not need interpreter location
 		browseButton.setEnabled(!isEmbedded);
 		pathText.setEnabled(!isEmbedded);
-		setCapabilityGroupEnabled(!isEmbedded);
-
-		// Set path text as Embedded because we are unable to retrieve the default path of the embedded interpreter type
 		final String embeddedPathValue = "(Embedded)"; //$NON-NLS-1$
 		if (isEmbedded) {
 			pathText.setText(embeddedPathValue);
-		} else if (embeddedPathValue.equals(pathText.getText())) {
+		} else {
 			pathText.setText(""); //$NON-NLS-1$
-		} else if (currentInterperter != null) {
-			pathText.setText(currentInterperter.getInstallLocation().toOSString());
 		}
 	}
 
