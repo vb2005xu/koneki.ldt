@@ -23,6 +23,10 @@ public interface ILuaInterpreterInstallType extends IInterpreterInstallType {
 
 	String getDefaultInterpreterArguments();
 
+	String getDefaultEEName();
+
+	String getDefaultEEVersion();
+
 	boolean handleInterpreterArguments();
 
 	boolean handleExecuteOption();

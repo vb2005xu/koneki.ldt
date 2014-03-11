@@ -46,6 +46,32 @@ public final class LuaGenericInterpreterUtil {
 		return (Boolean) InterpreterPackage.eINSTANCE.getInfo_FileAsArgumentsCapable().getDefaultValue();
 	}
 
+	public static String linkedExecutionEnvironmentName(final IInterpreterInstall interpreter) {
+
+		// Fetch interpreter option
+		if (interpreter != null) {
+			final Info info = getInfoFromInterpreter(interpreter);
+			if (info != null)
+				return info.getLinkedExecutionEnvironmentName();
+		}
+
+		// Use default option value
+		return null;
+	}
+
+	public static String linkedExecutionEnvironmentVersion(final IInterpreterInstall interpreter) {
+
+		// Fetch interpreter option
+		if (interpreter != null) {
+			final Info info = getInfoFromInterpreter(interpreter);
+			if (info != null)
+				return info.getLinkedExecutionEnvironmentVersion();
+		}
+
+		// Use default option value
+		return null;
+	}
+
 	private static Info getInfoFromInterpreter(final IInterpreterInstall interpreter) {
 		for (final EObject extension : interpreter.getExtensions())
 			if (extension instanceof Info)

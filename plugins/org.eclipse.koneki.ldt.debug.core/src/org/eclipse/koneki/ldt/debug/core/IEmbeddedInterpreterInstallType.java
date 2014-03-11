@@ -16,6 +16,7 @@ import org.eclipse.dltk.launching.IInterpreterInstallType;
  * Define that the InterpreterInstall of this type doesn't need a external location as the executable is bundled in a or several eclipse plug-in
  * 
  * @deprecated use ILuaInterpreterInstallType instead.
+ * @since 1.2
  */
 public interface IEmbeddedInterpreterInstallType extends IInterpreterInstallType {
 

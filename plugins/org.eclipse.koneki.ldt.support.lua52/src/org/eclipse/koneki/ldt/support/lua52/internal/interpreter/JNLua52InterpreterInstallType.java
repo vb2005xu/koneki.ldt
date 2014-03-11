@@ -24,4 +24,14 @@ public class JNLua52InterpreterInstallType extends AbstractJNLuaInterpreterInsta
 	protected IInterpreterInstall doCreateInterpreterInstall(String id) {
 		return new JNLua52InterpreterInstall(this, id);
 	}
+
+	@Override
+	public String getDefaultEEName() {
+		return "lua"; //$NON-NLS-1$
+	}
+
+	@Override
+	public String getDefaultEEVersion() {
+		return "5.2"; //$NON-NLS-1$
+	}
 }

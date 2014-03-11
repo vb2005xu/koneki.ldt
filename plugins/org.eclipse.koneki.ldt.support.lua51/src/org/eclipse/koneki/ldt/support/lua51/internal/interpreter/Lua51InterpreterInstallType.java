@@ -39,6 +39,16 @@ public class Lua51InterpreterInstallType extends AbstractLuaInterpreterInstallTy
 	}
 
 	@Override
+	public String getDefaultEEName() {
+		return "lua"; //$NON-NLS-1$
+	}
+
+	@Override
+	public String getDefaultEEVersion() {
+		return "5.1"; //$NON-NLS-1$
+	}
+
+	@Override
 	public boolean isEmbeddedInterpreter() {
 		return false;
 	}

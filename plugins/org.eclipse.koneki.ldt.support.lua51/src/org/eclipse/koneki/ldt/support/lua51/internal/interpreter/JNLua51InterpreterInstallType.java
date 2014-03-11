@@ -25,4 +25,13 @@ public class JNLua51InterpreterInstallType extends AbstractJNLuaInterpreterInsta
 		return new JNLua51InterpreterInstall(this, id);
 	}
 
+	@Override
+	public String getDefaultEEName() {
+		return "lua"; //$NON-NLS-1$
+	}
+
+	@Override
+	public String getDefaultEEVersion() {
+		return "5.1"; //$NON-NLS-1$
+	}
 }

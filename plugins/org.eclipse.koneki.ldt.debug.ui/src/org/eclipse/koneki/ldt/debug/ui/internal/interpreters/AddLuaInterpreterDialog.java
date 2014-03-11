@@ -10,9 +10,13 @@
  *******************************************************************************/
 package org.eclipse.koneki.ldt.debug.ui.internal.interpreters;
 
+import java.util.List;
+
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.dltk.core.environment.IEnvironment;
 import org.eclipse.dltk.core.internal.environment.LazyFileHandle;
 import org.eclipse.dltk.internal.debug.ui.interpreters.AbstractInterpreterLibraryBlock;
@@ -29,16 +33,19 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.StatusDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
-import org.eclipse.jface.resource.FontRegistry;
-import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.window.Window;
+import org.eclipse.koneki.ldt.core.internal.LuaLanguageToolkit;
+import org.eclipse.koneki.ldt.core.internal.PreferenceInitializer;
+import org.eclipse.koneki.ldt.core.internal.buildpath.LuaExecutionEnvironment;
+import org.eclipse.koneki.ldt.core.internal.buildpath.LuaExecutionEnvironmentManager;
 import org.eclipse.koneki.ldt.debug.core.IEmbeddedInterpreterInstallType;
 import org.eclipse.koneki.ldt.debug.core.internal.interpreter.generic.LuaGenericInterpreterInstallType;
 import org.eclipse.koneki.ldt.debug.core.internal.interpreter.generic.LuaGenericInterpreterUtil;
@@ -48,14 +55,14 @@ import org.eclipse.koneki.ldt.debug.core.internal.model.interpreter.impl.Interpr
 import org.eclipse.koneki.ldt.debug.core.internal.model.interpreter.impl.InterpreterPackageImpl;
 import org.eclipse.koneki.ldt.debug.core.interpreter.ILuaInterpreterInstallType;
 import org.eclipse.koneki.ldt.debug.ui.internal.Activator;
+import org.eclipse.koneki.ldt.ui.LuaExecutionEnvironmentUIManager;
 import org.eclipse.koneki.ldt.ui.SWTUtil;
+import org.eclipse.koneki.ldt.ui.internal.buildpath.LuaExecutionEnvironmentContentProvider;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.graphics.Font;
-import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -64,6 +71,7 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 @SuppressWarnings("restriction")
 public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInterpreterDialog {
@@ -83,6 +91,7 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 	private Button handlesExecutionOption;
 	private Group capabilitiesGroup;
 	private Button handlesFilesAsArguments;
+	private ComboViewer installedEEsComboViewer;
 
 	public AddLuaInterpreterDialog(final IAddInterpreterDialogRequestor requestor, final Shell shell, final IEnvironment environment,
 			final IInterpreterInstallType[] interpreterInstallTypes, final IInterpreterInstall standin) {
@@ -114,6 +123,16 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 		createLabel(container, InterpretersMessages.addInterpreterDialog_InterpreterEnvironmentType);
 		typesCombo = new ComboViewer(container);
 		GridDataFactory.swtDefaults().grab(true, false).align(SWT.FILL, SWT.CENTER).span(2, 1).applyTo(typesCombo.getControl());
+		typesCombo.setContentProvider(new ArrayContentProvider());
+		typesCombo.setLabelProvider(new LabelProvider() {
+			@Override
+			public String getText(Object element) {
+				if (element instanceof IInterpreterInstallType) {
+					return ((IInterpreterInstallType) element).getName();
+				}
+				return super.getText(element);
+			}
+		});
 
 		createLabel(container, InterpretersMessages.addInterpreterDialog_InterpreterExecutableName);
 		pathText = new Text(container, SWT.SINGLE | SWT.BORDER);
@@ -129,6 +148,12 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 		createLabel(container, InterpretersMessages.AddInterpreterDialog_iArgs);
 		argsText = new Text(container, SWT.SINGLE | SWT.BORDER);
 		GridDataFactory.swtDefaults().grab(true, false).span(2, 1).align(SWT.FILL, SWT.CENTER).applyTo(argsText);
+
+		// Execution Environment actual list
+		createLabel(container, "Linked Execution Environment:");
+		installedEEsComboViewer = new ComboViewer(container, SWT.READ_ONLY | SWT.BORDER);
+		installedEEsComboViewer.setContentProvider(new LuaExecutionEnvironmentContentProvider());
+		GridDataFactory.swtDefaults().grab(true, false).span(2, 1).align(SWT.FILL, SWT.BEGINNING).applyTo(installedEEsComboViewer.getControl());
 
 		environementVariableBlock = new LuaInterpreterEnvironmentVariablesBlock(new AddInterpreterDialogAdapter(requestor, getShell(),
 				interpreterInstallTypes, currentInterperter));
@@ -155,14 +180,15 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 		return container;
 	}
 
-	private <T extends Control> T toItalic(final T control) {
-		final FontRegistry fontRegistry = JFaceResources.getFontRegistry();
-		for (final FontData fontData : control.getFont().getFontData()) {
-			final Font font = fontRegistry.getItalic(fontData.getName());
-			control.setFont(font);
-		}
-		return control;
-	}
+	// TODO remove this unused code
+	// private <T extends Control> T toItalic(final T control) {
+	// final FontRegistry fontRegistry = JFaceResources.getFontRegistry();
+	// for (final FontData fontData : control.getFont().getFontData()) {
+	// final Font font = fontRegistry.getItalic(fontData.getName());
+	// control.setFont(font);
+	// }
+	// return control;
+	// }
 
 	private Label createLabel(final Composite container, final String text) {
 		final Label label = new Label(container, SWT.NONE);
@@ -212,26 +238,17 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 	}
 
 	private void init() {
-
-		handlesExecutionOption.setSelection(LuaGenericInterpreterUtil.interpreterHandlesExecuteOption(currentInterperter));
-		handlesFilesAsArguments.setSelection(LuaGenericInterpreterUtil.interpreterHandlesFilesAsArgument(currentInterperter));
-
 		// init type combo
-		typesCombo.setContentProvider(new ArrayContentProvider());
-		typesCombo.setLabelProvider(new LabelProvider() {
-			@Override
-			public String getText(Object element) {
-				if (element instanceof IInterpreterInstallType) {
-					return ((IInterpreterInstallType) element).getName();
-				}
-				return super.getText(element);
-			}
-		});
 		typesCombo.setInput(interpreterInstallTypes);
 		typesCombo.getControl().setEnabled(currentInterperter == null);
 
-		// init field values
+		// init execution environment combo
+		final List<LuaExecutionEnvironment> installedExecutionEnvironments = LuaExecutionEnvironmentUIManager.getAvailableExecutionEnvironments();
+		installedEEsComboViewer.setInput(installedExecutionEnvironments);
+
 		if (currentInterperter != null) {
+			// Current interpreter != null => we are in edit mode
+
 			// select interpreter type
 			typesCombo.setSelection(new StructuredSelection(currentInterperter.getInterpreterInstallType()));
 
@@ -246,8 +263,23 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 				argsText.setText(args);
 
 			environementVariableBlock.initializeFrom(currentInterperter, currentInterperter.getInterpreterInstallType());
+
+			handlesExecutionOption.setSelection(LuaGenericInterpreterUtil.interpreterHandlesExecuteOption(currentInterperter));
+			handlesFilesAsArguments.setSelection(LuaGenericInterpreterUtil.interpreterHandlesFilesAsArgument(currentInterperter));
+
+			String eeName = LuaGenericInterpreterUtil.linkedExecutionEnvironmentName(currentInterperter);
+			String eeVersion = LuaGenericInterpreterUtil.linkedExecutionEnvironmentVersion(currentInterperter);
+
+			try {
+				LuaExecutionEnvironment ee = LuaExecutionEnvironmentManager.getAvailableExecutionEnvironment(eeName, eeVersion);
+				if (ee != null)
+					installedEEsComboViewer.setSelection(new StructuredSelection(ee));
+			} catch (CoreException e) {
+				Activator.log(e.getStatus());
+			}
+
 		} else {
-			// for user experience, Lua 5.1 by default or lua generic is not found.
+			// Current interpreter == null => we are in create mode
 			IInterpreterInstallType lua51 = null;
 			IInterpreterInstallType luageneric = null;
 			for (IInterpreterInstallType type : interpreterInstallTypes) {
@@ -264,6 +296,8 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 			else
 				typesCombo.setSelection(new StructuredSelection(luageneric));
 
+			// Select default
+			// for user experience, Lua 5.1 by default or lua generic is not found.
 			updateWidgetDefaultValue();
 		}
 
@@ -275,39 +309,73 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 	}
 
 	private void updateWidgetDefaultValue() {
+
 		// Get selected interpreter type
 		final IInterpreterInstallType selectedType = getSelectedInterpreterType();
 
-		// TODO This declaration be move when we will remove IEmbeddedInterpreterInstallType for ldt 2.0.0.
-		boolean isEmbedded = false;
+		// Get default value
+		String defaultPath = ""; //$NON-NLS-1$
+		String defaultName = ""; //$NON-NLS-1$
+		String defaultArgs = ""; //$NON-NLS-1$
+		boolean defaultHandlesFilesAsArguments = true;
+		boolean defaulthandlesExecutionOption = true;
+		LuaExecutionEnvironment defaultee = null;
 
 		// Try to cast it has LuaInterpreter to know default value
 		ILuaInterpreterInstallType selectedLuaInterpreterType;
 		if (selectedType instanceof ILuaInterpreterInstallType) {
 			selectedLuaInterpreterType = (ILuaInterpreterInstallType) selectedType;
+
+			if (selectedLuaInterpreterType.isEmbeddedInterpreter())
+				defaultPath = "(Embedded)"; //$NON-NLS-1$
+
 			if (selectedLuaInterpreterType.getDefaultInterpreterName() != null)
-				nameText.setText(selectedLuaInterpreterType.getDefaultInterpreterName());
-			else
-				nameText.setText(""); //$NON-NLS-1$
+				defaultName = selectedLuaInterpreterType.getDefaultInterpreterName();
 
 			if (selectedLuaInterpreterType.getDefaultInterpreterArguments() != null)
-				argsText.setText(selectedLuaInterpreterType.getDefaultInterpreterArguments());
-			else
-				argsText.setText(""); //$NON-NLS-1$
+				defaultArgs = selectedLuaInterpreterType.getDefaultInterpreterArguments();
 
-			isEmbedded = selectedLuaInterpreterType.isEmbeddedInterpreter();
-		} else {
-			nameText.setText(""); //$NON-NLS-1$
-			argsText.setText(""); //$NON-NLS-1$
+			defaulthandlesExecutionOption = selectedLuaInterpreterType.handleExecuteOption();
+			defaultHandlesFilesAsArguments = selectedLuaInterpreterType.handleFilesAsArgument();
 
-			isEmbedded = selectedType instanceof IEmbeddedInterpreterInstallType;
-		}
-		final String embeddedPathValue = "(Embedded)"; //$NON-NLS-1$
-		if (isEmbedded) {
-			pathText.setText(embeddedPathValue);
+			try {
+				defaultee = LuaExecutionEnvironmentManager.getAvailableExecutionEnvironment(selectedLuaInterpreterType.getDefaultEEName(),
+						selectedLuaInterpreterType.getDefaultEEVersion());
+			} catch (CoreException e) {
+				Activator.log(e.getStatus());
+			}
 		} else {
-			pathText.setText(""); //$NON-NLS-1$	
+			if (selectedType instanceof IEmbeddedInterpreterInstallType)
+				defaultPath = "(Embedded)"; //$NON-NLS-1$
 		}
+
+		// if no default execution environment linked to this interpreter type.
+		if (defaultee == null) {
+			final List<LuaExecutionEnvironment> installedExecutionEnvironments = LuaExecutionEnvironmentUIManager.getAvailableExecutionEnvironments();
+			if (installedExecutionEnvironments.size() > 0) {
+				// look for default EE
+				ScopedPreferenceStore preferenceStore = new ScopedPreferenceStore(InstanceScope.INSTANCE, LuaLanguageToolkit.getDefault()
+						.getPreferenceQualifier());
+				String defaultEEId = preferenceStore.getString(PreferenceInitializer.EE_DEFAULT_ID);
+				for (LuaExecutionEnvironment execEnv : installedExecutionEnvironments) {
+					if (execEnv.getEEIdentifier().equals(defaultEEId))
+						defaultee = execEnv;
+				}
+
+				// if no default EE were found, select the first one
+				if (defaultee == null) {
+					defaultee = installedExecutionEnvironments.get(0);
+				}
+			}
+		}
+
+		// set value
+		pathText.setText(defaultPath);
+		nameText.setText(defaultName);
+		argsText.setText(defaultArgs);
+		handlesExecutionOption.setSelection(defaulthandlesExecutionOption);
+		handlesFilesAsArguments.setSelection(defaultHandlesFilesAsArguments);
+		installedEEsComboViewer.setSelection(new StructuredSelection(defaultee));
 	}
 
 	private void updateWidgetState() {
@@ -322,21 +390,13 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 		if (selectedType instanceof ILuaInterpreterInstallType) {
 			selectedLuaInterpreterType = (ILuaInterpreterInstallType) selectedType;
 			argsText.setEnabled(selectedLuaInterpreterType.handleInterpreterArguments());
-
-			handlesFilesAsArguments.setSelection(selectedLuaInterpreterType.handleExecuteOption());
 			handlesExecutionOption.setEnabled(false);
-
-			handlesFilesAsArguments.setSelection(selectedLuaInterpreterType.handleFilesAsArgument());
 			handlesFilesAsArguments.setEnabled(false);
-
 			isEmbedded = selectedLuaInterpreterType.isEmbeddedInterpreter();
 		} else {
 			argsText.setEnabled(true);
 			handlesExecutionOption.setEnabled(true);
 			handlesFilesAsArguments.setEnabled(true);
-			handlesExecutionOption.setSelection(true);
-			handlesFilesAsArguments.setSelection(true);
-
 			// Manage deprecated code (since 1.2)
 			// Check if it is embedded
 			isEmbedded = selectedType instanceof IEmbeddedInterpreterInstallType;
@@ -408,10 +468,25 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 		// Files as argument option
 		final boolean filesAsArgumentOptionChecked = handlesFilesAsArguments != null && handlesFilesAsArguments.getSelection();
 
+		// manage linked Execution environement
+		ISelection selection = installedEEsComboViewer.getSelection();
+		String eeName = null;
+		String eeVersion = null;
+		if (selection instanceof IStructuredSelection) {
+			Object firstElement = ((IStructuredSelection) selection).getFirstElement();
+			if (firstElement instanceof LuaExecutionEnvironment) {
+				eeName = ((LuaExecutionEnvironment) firstElement).getID();
+				eeVersion = ((LuaExecutionEnvironment) firstElement).getVersion();
+			}
+		}
+
 		final InterpreterFactory factory = InterpreterFactoryImpl.eINSTANCE;
 		final Info info = factory.createInfo();
 		info.setExecuteOptionCapable(executionOptionChecked);
 		info.setFileAsArgumentsCapable(filesAsArgumentOptionChecked);
+		info.setLinkedExecutionEnvironmentName(eeName);
+		info.setLinkedExecutionEnvironmentVersion(eeVersion);
+
 		currentInterperter.replaceExtension(InterpreterPackageImpl.eINSTANCE.getInfo(), info);
 
 		environementVariableBlock.performApply(currentInterperter);
