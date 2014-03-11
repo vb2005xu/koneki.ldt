@@ -65,6 +65,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+@SuppressWarnings("restriction")
 public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInterpreterDialog {
 
 	private IAddInterpreterDialogRequestor requestor;
@@ -148,8 +149,8 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 		handlesFilesAsArguments.setText(Messages.AddLuaInterpreterDialog_FilesAsArguments);
 
 		applyDialogFont(container);
-		hookListeners();
 		init();
+		hookListeners();
 
 		return container;
 	}
@@ -175,7 +176,8 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 
 			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
-				updateOnInterpreterTypeChange();
+				updateWidgetDefaultValue();
+				updateWidgetState();
 			}
 		});
 
@@ -230,10 +232,11 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 
 		// init field values
 		if (currentInterperter != null) {
+			// select interpreter type
 			typesCombo.setSelection(new StructuredSelection(currentInterperter.getInterpreterInstallType()));
-			updateOnInterpreterTypeChange();
 
-			if (currentInterperter.getInstallLocation().length() > 0)
+			// update widget value.
+			if (currentInterperter.getInstallLocation().toOSString().length() > 0)
 				pathText.setText(currentInterperter.getInstallLocation().toOSString());
 
 			nameText.setText(currentInterperter.getName());
@@ -244,18 +247,34 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 
 			environementVariableBlock.initializeFrom(currentInterperter, currentInterperter.getInterpreterInstallType());
 		} else {
-			// for user experience, the selected type by default should be Lua Generic
+			// for user experience, Lua 5.1 by default or lua generic is not found.
+			IInterpreterInstallType lua51 = null;
+			IInterpreterInstallType luageneric = null;
 			for (IInterpreterInstallType type : interpreterInstallTypes) {
-				if (type instanceof LuaGenericInterpreterInstallType && typesCombo.getSelection().isEmpty())
-					typesCombo.setSelection(new StructuredSelection(type));
+				if ("Lua 5.1".equals(type.getName())) { //$NON-NLS-1$
+					lua51 = type;
+					break;
+				}
+				if (type instanceof LuaGenericInterpreterInstallType) {
+					luageneric = type;
+				}
 			}
+			if (lua51 != null)
+				typesCombo.setSelection(new StructuredSelection(lua51));
+			else
+				typesCombo.setSelection(new StructuredSelection(luageneric));
+
+			updateWidgetDefaultValue();
 		}
+
+		// update widget state
+		updateWidgetState();
 
 		// update environment block buttons
 		environementVariableBlock.update();
 	}
 
-	private void updateOnInterpreterTypeChange() {
+	private void updateWidgetDefaultValue() {
 		// Get selected interpreter type
 		final IInterpreterInstallType selectedType = getSelectedInterpreterType();
 
@@ -266,7 +285,6 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 		ILuaInterpreterInstallType selectedLuaInterpreterType;
 		if (selectedType instanceof ILuaInterpreterInstallType) {
 			selectedLuaInterpreterType = (ILuaInterpreterInstallType) selectedType;
-
 			if (selectedLuaInterpreterType.getDefaultInterpreterName() != null)
 				nameText.setText(selectedLuaInterpreterType.getDefaultInterpreterName());
 			else
@@ -276,6 +294,33 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 				argsText.setText(selectedLuaInterpreterType.getDefaultInterpreterArguments());
 			else
 				argsText.setText(""); //$NON-NLS-1$
+
+			isEmbedded = selectedLuaInterpreterType.isEmbeddedInterpreter();
+		} else {
+			nameText.setText(""); //$NON-NLS-1$
+			argsText.setText(""); //$NON-NLS-1$
+
+			isEmbedded = selectedType instanceof IEmbeddedInterpreterInstallType;
+		}
+		final String embeddedPathValue = "(Embedded)"; //$NON-NLS-1$
+		if (isEmbedded) {
+			pathText.setText(embeddedPathValue);
+		} else {
+			pathText.setText(""); //$NON-NLS-1$	
+		}
+	}
+
+	private void updateWidgetState() {
+		// Get selected interpreter type
+		final IInterpreterInstallType selectedType = getSelectedInterpreterType();
+
+		// TODO This declaration be move when we will remove IEmbeddedInterpreterInstallType for ldt 2.0.0.
+		boolean isEmbedded = false;
+
+		// Try to cast it has LuaInterpreter to know default value
+		ILuaInterpreterInstallType selectedLuaInterpreterType;
+		if (selectedType instanceof ILuaInterpreterInstallType) {
+			selectedLuaInterpreterType = (ILuaInterpreterInstallType) selectedType;
 			argsText.setEnabled(selectedLuaInterpreterType.handleInterpreterArguments());
 
 			handlesFilesAsArguments.setSelection(selectedLuaInterpreterType.handleExecuteOption());
@@ -286,8 +331,6 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 
 			isEmbedded = selectedLuaInterpreterType.isEmbeddedInterpreter();
 		} else {
-			nameText.setText(""); //$NON-NLS-1$
-			argsText.setText(""); //$NON-NLS-1$
 			argsText.setEnabled(true);
 			handlesExecutionOption.setEnabled(true);
 			handlesFilesAsArguments.setEnabled(true);
@@ -303,12 +346,7 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 		// Embedded interpreter does not need interpreter location
 		browseButton.setEnabled(!isEmbedded);
 		pathText.setEnabled(!isEmbedded);
-		final String embeddedPathValue = "(Embedded)"; //$NON-NLS-1$
-		if (isEmbedded) {
-			pathText.setText(embeddedPathValue);
-		} else {
-			pathText.setText(""); //$NON-NLS-1$
-		}
+
 	}
 
 	private IInterpreterInstallType getSelectedInterpreterType() {
