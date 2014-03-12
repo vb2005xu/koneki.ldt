@@ -286,12 +286,14 @@ function M.createmoduleapi(ast,modulename)
                 _moduletypedef.defaultkeytyperef = createtyperef(keytype)
                 _moduletypedef.defaultvaluetyperef = createtyperef(valuetype)
                 _moduletypedef.structurekind = "map"
+                _moduletypedef.structuredescription = regulartags["map"][1].description
               end
 					  elseif regulartags["list"] and regulartags["list"][1] then
               local type = regulartags["list"][1].type
               if type then 
                 _moduletypedef.defaultvaluetyperef = createtyperef(type)
                 _moduletypedef.structurekind = "list"
+                _moduletypedef.structuredescription = regulartags["list"][1].description
               end
             end
 					end
@@ -338,12 +340,14 @@ function M.createmoduleapi(ast,modulename)
             _recordtypedef.defaultkeytyperef = createtyperef(keytype)
             _recordtypedef.defaultvaluetyperef = createtyperef(valuetype)
             _recordtypedef.structurekind = "map"
+            _recordtypedef.structuredescription = regulartags["map"][1].description
           end
         elseif regulartags["list"] and regulartags["list"][1] then
           local type = regulartags["list"][1].type
           if type then 
             _recordtypedef.defaultvaluetyperef = createtyperef(type)
             _recordtypedef.structurekind = "list"
+            _recordtypedef.structuredescription = regulartags["list"][1].description
           end
         end
 			elseif regulartags["field"] then
