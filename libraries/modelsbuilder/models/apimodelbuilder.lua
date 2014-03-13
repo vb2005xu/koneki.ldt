@@ -26,7 +26,8 @@ local primitivetypes = {
 	['number']   = true,
 	['string']   = true,
 	['thread']   = true,
-	['userdata'] = true
+	['userdata'] = true,
+	['any']      = true
 }
 
 -- get or create the typedef with the name "name"
