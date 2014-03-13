@@ -25,6 +25,38 @@ return [[#
 #if _recordtypedef.description and #_recordtypedef.description > 0 then
 	$( format( _recordtypedef.description ) )
 #end
+# --
+# -- Structure
+# --
+#if _recordtypedef.structurekind then
+#  local structureLine = '<code><em>' .. prettyname(_recordtypedef)..'</em></code>'
+#  if _recordtypedef.structurekind == "map" then
+#    structureLine = structureLine .. ' is a map of <code><em>'
+#
+#    local keylink = linkto( _recordtypedef.defaultkeytyperef )
+#    local keyname = prettyname( _recordtypedef.defaultkeytyperef )
+#    if keylink then
+#      structureLine = structureLine .. '<a href=\"' .. keylink .. '\">' .. keyname .. '</a>'
+#    else
+#      structureLine = structureLine .. keyname
+#    end
+#    structureLine = structureLine .. '</em></code> to <code><em>'
+#
+#  else
+#    structureLine = structureLine .. ' is a list of <code><em>'
+#  end
+#
+#  local valuelink = linkto( _recordtypedef.defaultvaluetyperef )
+#  local valuename = prettyname( _recordtypedef.defaultvaluetyperef )
+#  if valuelink then
+#    structureLine = structureLine .. '<a href=\"' .. valuelink .. '\">' .. valuename .. '</a>'
+#  else
+#    structureLine = structureLine .. valuename
+#  end
+#
+#  structureLine = structureLine ..'</em></code>. '.. _recordtypedef.structuredescription
+	$( format(structureLine) )
+#end
 #--
 #-- Describe usage
 #--
