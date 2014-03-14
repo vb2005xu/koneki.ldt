@@ -15,7 +15,6 @@ import java.util.List;
 
 import org.eclipse.dltk.launching.IInterpreterInstall;
 import org.eclipse.dltk.launching.IInterpreterInstallType;
-import org.eclipse.dltk.launching.InterpreterStandin;
 import org.eclipse.dltk.launching.ScriptRuntime;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.koneki.ldt.core.LuaNature;
@@ -44,7 +43,7 @@ public final class LuaInterpreterUtil {
 			if (installs != null)
 				for (int j = 0; j < installs.length; j++) {
 					IInterpreterInstall install = installs[j];
-					interpreters.add(new InterpreterStandin(install));
+					interpreters.add(install);
 				}
 		}
 
@@ -123,7 +122,7 @@ public final class LuaInterpreterUtil {
 	public static boolean isExecutionEnvironmentCompatible(IInterpreterInstall interpreter, String eeName, String eeVersion) {
 		String linkedEEName = LuaInterpreterUtil.linkedExecutionEnvironmentName(interpreter);
 		String linkedEEVersion = LuaInterpreterUtil.linkedExecutionEnvironmentVersion(interpreter);
-		return linkedEEName != null && eeVersion != null && eeName.equals(linkedEEName) && eeVersion.equals(linkedEEVersion);
+		return linkedEEName != null && eeVersion != null && linkedEEName.equals(eeName) && linkedEEVersion.equals(eeVersion);
 	}
 
 	private static Info getInfoFromInterpreter(final IInterpreterInstall interpreter) {
