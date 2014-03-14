@@ -8,16 +8,53 @@
  * Contributors:
  *     Sierra Wireless - initial API and implementation
  *******************************************************************************/
-package org.eclipse.koneki.ldt.debug.core.internal.interpreter.generic;
+package org.eclipse.koneki.ldt.debug.core.interpreter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.dltk.launching.IInterpreterInstall;
+import org.eclipse.dltk.launching.IInterpreterInstallType;
+import org.eclipse.dltk.launching.InterpreterStandin;
+import org.eclipse.dltk.launching.ScriptRuntime;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.koneki.ldt.core.LuaNature;
 import org.eclipse.koneki.ldt.debug.core.internal.model.interpreter.Info;
 import org.eclipse.koneki.ldt.debug.core.internal.model.interpreter.InterpreterPackage;
 
-public final class LuaGenericInterpreterUtil {
+/**
+ * @since 1.2
+ */
+public final class LuaInterpreterUtil {
 
-	private LuaGenericInterpreterUtil() {
+	private LuaInterpreterUtil() {
+	}
+
+	public static IInterpreterInstall getDefaultInterpreter() {
+		return ScriptRuntime.getDefaultInterpreterInstall(LuaNature.ID, null);
+	}
+
+	public static List<IInterpreterInstall> getInterpreters() {
+		List<IInterpreterInstall> interpreters = new ArrayList<IInterpreterInstall>();
+
+		IInterpreterInstallType[] types = ScriptRuntime.getInterpreterInstallTypes(LuaNature.ID);
+		for (int i = 0; i < types.length; i++) {
+			IInterpreterInstallType type = types[i];
+			IInterpreterInstall[] installs = type.getInterpreterInstalls();
+			if (installs != null)
+				for (int j = 0; j < installs.length; j++) {
+					IInterpreterInstall install = installs[j];
+					interpreters.add(new InterpreterStandin(install));
+				}
+		}
+
+		return interpreters;
+	}
+
+	public static boolean isEmbedded(final IInterpreterInstall interpreter) {
+		IInterpreterInstallType interpreterInstallType = interpreter.getInterpreterInstallType();
+		return interpreterInstallType instanceof ILuaInterpreterInstallType
+				&& ((ILuaInterpreterInstallType) interpreterInstallType).isEmbeddedInterpreter();
 	}
 
 	public static boolean interpreterHandlesExecuteOption(final IInterpreterInstall interpreter) {
@@ -53,6 +90,12 @@ public final class LuaGenericInterpreterUtil {
 			final Info info = getInfoFromInterpreter(interpreter);
 			if (info != null)
 				return info.getLinkedExecutionEnvironmentName();
+			else {
+				IInterpreterInstallType interpreterInstallType = interpreter.getInterpreterInstallType();
+				if (interpreterInstallType instanceof ILuaInterpreterInstallType)
+					return ((ILuaInterpreterInstallType) interpreterInstallType).getDefaultEEName();
+			}
+
 		}
 
 		// Use default option value
@@ -66,10 +109,21 @@ public final class LuaGenericInterpreterUtil {
 			final Info info = getInfoFromInterpreter(interpreter);
 			if (info != null)
 				return info.getLinkedExecutionEnvironmentVersion();
+			else {
+				IInterpreterInstallType interpreterInstallType = interpreter.getInterpreterInstallType();
+				if (interpreterInstallType instanceof ILuaInterpreterInstallType)
+					return ((ILuaInterpreterInstallType) interpreterInstallType).getDefaultEEVersion();
+			}
 		}
 
 		// Use default option value
 		return null;
+	}
+
+	public static boolean isExecutionEnvironmentCompatible(IInterpreterInstall interpreter, String eeName, String eeVersion) {
+		String linkedEEName = LuaInterpreterUtil.linkedExecutionEnvironmentName(interpreter);
+		String linkedEEVersion = LuaInterpreterUtil.linkedExecutionEnvironmentVersion(interpreter);
+		return linkedEEName != null && eeVersion != null && eeName.equals(linkedEEName) && eeVersion.equals(linkedEEVersion);
 	}
 
 	private static Info getInfoFromInterpreter(final IInterpreterInstall interpreter) {

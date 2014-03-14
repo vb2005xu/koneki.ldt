@@ -38,7 +38,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.koneki.ldt.core.LuaNature;
-import org.eclipse.koneki.ldt.debug.core.internal.interpreter.generic.LuaGenericInterpreterUtil;
+import org.eclipse.koneki.ldt.debug.core.interpreter.LuaInterpreterUtil;
 import org.eclipse.koneki.ldt.debug.ui.internal.Activator;
 import org.eclipse.koneki.ldt.debug.ui.internal.launchconfiguration.local.tab.Messages;
 import org.eclipse.koneki.ldt.ui.SWTUtil;
@@ -218,7 +218,7 @@ public class LuaMainLaunchConfigurationTab extends MainLaunchConfigurationTab {
 	private void refreshScriptField() {
 		// refresh script selection UI
 		IInterpreterInstall selectedInterpreter = getSelectedInterpreter();
-		boolean interpreterHandlesFilesAsArgument = LuaGenericInterpreterUtil.interpreterHandlesFilesAsArgument(selectedInterpreter);
+		boolean interpreterHandlesFilesAsArgument = LuaInterpreterUtil.interpreterHandlesFilesAsArgument(selectedInterpreter);
 		setEnableScriptField(interpreterHandlesFilesAsArgument);
 	}
 
@@ -314,7 +314,7 @@ public class LuaMainLaunchConfigurationTab extends MainLaunchConfigurationTab {
 	@Override
 	protected boolean validateScript() {
 		IInterpreterInstall selectedInterpreter = getSelectedInterpreter();
-		boolean interpreterHandlesFilesAsArgument = LuaGenericInterpreterUtil.interpreterHandlesFilesAsArgument(selectedInterpreter);
+		boolean interpreterHandlesFilesAsArgument = LuaInterpreterUtil.interpreterHandlesFilesAsArgument(selectedInterpreter);
 		if (interpreterHandlesFilesAsArgument)
 			return super.validateScript();
 		else

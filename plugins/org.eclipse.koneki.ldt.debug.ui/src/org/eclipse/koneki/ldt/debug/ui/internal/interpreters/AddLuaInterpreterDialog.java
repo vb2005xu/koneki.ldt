@@ -48,12 +48,12 @@ import org.eclipse.koneki.ldt.core.internal.buildpath.LuaExecutionEnvironment;
 import org.eclipse.koneki.ldt.core.internal.buildpath.LuaExecutionEnvironmentManager;
 import org.eclipse.koneki.ldt.debug.core.IEmbeddedInterpreterInstallType;
 import org.eclipse.koneki.ldt.debug.core.internal.interpreter.generic.LuaGenericInterpreterInstallType;
-import org.eclipse.koneki.ldt.debug.core.internal.interpreter.generic.LuaGenericInterpreterUtil;
 import org.eclipse.koneki.ldt.debug.core.internal.model.interpreter.Info;
 import org.eclipse.koneki.ldt.debug.core.internal.model.interpreter.InterpreterFactory;
 import org.eclipse.koneki.ldt.debug.core.internal.model.interpreter.impl.InterpreterFactoryImpl;
 import org.eclipse.koneki.ldt.debug.core.internal.model.interpreter.impl.InterpreterPackageImpl;
 import org.eclipse.koneki.ldt.debug.core.interpreter.ILuaInterpreterInstallType;
+import org.eclipse.koneki.ldt.debug.core.interpreter.LuaInterpreterUtil;
 import org.eclipse.koneki.ldt.debug.ui.internal.Activator;
 import org.eclipse.koneki.ldt.ui.LuaExecutionEnvironmentUIManager;
 import org.eclipse.koneki.ldt.ui.SWTUtil;
@@ -264,11 +264,11 @@ public class AddLuaInterpreterDialog extends StatusDialog implements IScriptInte
 
 			environementVariableBlock.initializeFrom(currentInterperter, currentInterperter.getInterpreterInstallType());
 
-			handlesExecutionOption.setSelection(LuaGenericInterpreterUtil.interpreterHandlesExecuteOption(currentInterperter));
-			handlesFilesAsArguments.setSelection(LuaGenericInterpreterUtil.interpreterHandlesFilesAsArgument(currentInterperter));
+			handlesExecutionOption.setSelection(LuaInterpreterUtil.interpreterHandlesExecuteOption(currentInterperter));
+			handlesFilesAsArguments.setSelection(LuaInterpreterUtil.interpreterHandlesFilesAsArgument(currentInterperter));
 
-			String eeName = LuaGenericInterpreterUtil.linkedExecutionEnvironmentName(currentInterperter);
-			String eeVersion = LuaGenericInterpreterUtil.linkedExecutionEnvironmentVersion(currentInterperter);
+			String eeName = LuaInterpreterUtil.linkedExecutionEnvironmentName(currentInterperter);
+			String eeVersion = LuaInterpreterUtil.linkedExecutionEnvironmentVersion(currentInterperter);
 
 			try {
 				LuaExecutionEnvironment ee = LuaExecutionEnvironmentManager.getAvailableExecutionEnvironment(eeName, eeVersion);
